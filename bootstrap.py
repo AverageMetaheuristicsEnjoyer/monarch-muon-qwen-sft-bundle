@@ -41,7 +41,7 @@ def main():
             return 0
         environment = dict(os.environ)
         environment["PROBE_SOURCE_COMMIT"] = manifest["source_commit"]
-        return subprocess.run(["bash", "scripts/cloud_probe_transfer.sh"],
+        return subprocess.run(["bash", "scripts/cloud_probe_transfer.sh", *sys.argv[1:]],
                               cwd=source, env=environment).returncode
 
 
