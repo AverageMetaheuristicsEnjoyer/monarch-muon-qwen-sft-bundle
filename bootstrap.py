@@ -58,9 +58,17 @@ def main():
             return 0
         if sys.argv[1:] == ["--inspect-sft"]:
             run_root = Path("/home/jovyan/monarch-qwen-sft-20260929")
+            for name in ("/home/jovyan", "/workspace-SR006.nfs2", "/workspace-SR006.nfs3", "/tmp"):
+                if Path(name).exists():
+                    print("SFT_DISK=" + json.dumps({"path": name, "usage": shutil.disk_usage(name)._asdict()}), flush=True)
+            for name in ("/home/jovyan", str(run_root)):
+                result = subprocess.run(["du", "-x", "-B1", "--max-depth=1", name], capture_output=True, text=True, timeout=120)
+                print("SFT_DISK_DIRECTORIES " + name + "\n" + result.stdout, flush=True)
             print("SFT_ROOT_EXISTS=" + str(run_root.exists()), flush=True)
             if run_root.exists():
                 print(json.dumps({p.name: p.stat().st_size for p in run_root.iterdir()}), flush=True)
+                for path in sorted(run_root.glob("runs-g2/*/*.json")):
+                    print("SFT_RESULT " + str(path) + " " + path.read_text(), flush=True)
                 for path in sorted(run_root.glob("*.log")):
                     print("SFT_LOG " + path.name, flush=True)
                     with path.open(errors="replace") as stream:
