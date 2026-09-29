@@ -46,6 +46,17 @@ def main():
               flush=True)
         if sys.argv[1:] == ["--verify-only"]:
             return 0
+        if sys.argv[1:] == ["--inspect-sft"]:
+            run_root = Path("/home/jovyan/monarch-qwen-sft-20260929")
+            print("SFT_ROOT_EXISTS=" + str(run_root.exists()), flush=True)
+            if run_root.exists():
+                print(json.dumps({p.name: p.stat().st_size for p in run_root.iterdir()}), flush=True)
+                for path in sorted(run_root.glob("*.log")):
+                    print("SFT_LOG " + path.name, flush=True)
+                    with path.open(errors="replace") as stream:
+                        from collections import deque
+                        print("".join(deque(stream, maxlen=30)), flush=True)
+            return 0
         if sys.argv[1:] == ["--preflight"]:
             import torch
             volumes = {}
