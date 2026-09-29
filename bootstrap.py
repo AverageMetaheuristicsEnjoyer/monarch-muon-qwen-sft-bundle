@@ -12,6 +12,12 @@ import tempfile
 
 def main():
     os.umask(0o077)
+    for name in ("SFT_ARCHIVE_KEY_B64", "SFT_ARCHIVE_HOSTS_B64"):
+        parts = []
+        while f"{name}_{len(parts):02d}" in os.environ:
+            parts.append(os.environ.pop(f"{name}_{len(parts):02d}"))
+        if parts:
+            os.environ[name] = "".join(parts)
     key = os.environ.pop("BUNDLE_KEY")
     payload = (Path(__file__).resolve().parent / "payload.fernet").read_bytes()
     with tempfile.TemporaryDirectory(prefix="monarch-qwen-bundle-") as directory:
