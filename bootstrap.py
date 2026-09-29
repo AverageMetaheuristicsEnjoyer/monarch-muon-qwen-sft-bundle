@@ -46,6 +46,25 @@ def main():
               flush=True)
         if sys.argv[1:] == ["--verify-only"]:
             return 0
+        if sys.argv[1:] == ["--reclaim-initialization"]:
+            run_root = Path("/home/jovyan/monarch-qwen-sft-20260929")
+            projection = run_root / "monarch-initial.safetensors"
+            expected = "027e8810a99e738e636ac0fc1cdffdc4340ef5d92be13ea1e6ff618002f4ec4b"
+            receipt = json.loads((run_root / "archives/monarch-initial.json").read_text())
+            if receipt["sha256"] != expected or receipt["bytes"] != 10518995488:
+                raise RuntimeError("Initialization archive receipt mismatch")
+            if projection.exists():
+                sys.path.insert(0, str(source))
+                from sft_archive import file_sha256
+                if projection.stat().st_size != receipt["bytes"] or file_sha256(projection) != expected:
+                    raise RuntimeError("Initialization duplicate checksum mismatch")
+                projection.unlink()
+                print("SFT_RECLAIMED_BYTES=" + str(receipt["bytes"]), flush=True)
+            else:
+                print("SFT_INITIALIZATION_DUPLICATE_ALREADY_ABSENT", flush=True)
+            for name in ("/home/jovyan", "/workspace-SR006.nfs2", "/workspace-SR006.nfs3"):
+                print("SFT_DISK=" + json.dumps({"path": name, "usage": shutil.disk_usage(name)._asdict()}), flush=True)
+            return 0
         if sys.argv[1:] == ["--archive-initialization"]:
             sys.path.insert(0, str(source))
             from sft_archive import upload
