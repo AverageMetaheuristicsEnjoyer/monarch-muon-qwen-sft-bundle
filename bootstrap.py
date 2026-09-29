@@ -46,6 +46,16 @@ def main():
               flush=True)
         if sys.argv[1:] == ["--verify-only"]:
             return 0
+        if sys.argv[1:] == ["--archive-initialization"]:
+            sys.path.insert(0, str(source))
+            from sft_archive import upload
+            run_root = Path("/home/jovyan/monarch-qwen-sft-20260929")
+            projection = run_root / "monarch-initial.safetensors"
+            receipt = upload(projection)
+            upload(projection.with_suffix(".json"))
+            (run_root / "archives/monarch-initial.json").write_text(json.dumps(receipt, indent=2) + "\n")
+            print("SFT_INITIALIZATION_ARCHIVED=" + json.dumps(receipt), flush=True)
+            return 0
         if sys.argv[1:] == ["--inspect-sft"]:
             run_root = Path("/home/jovyan/monarch-qwen-sft-20260929")
             print("SFT_ROOT_EXISTS=" + str(run_root.exists()), flush=True)
