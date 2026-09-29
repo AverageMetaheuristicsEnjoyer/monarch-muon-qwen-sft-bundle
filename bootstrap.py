@@ -48,6 +48,8 @@ def main():
                     usage = shutil.disk_usage(name)
                     volumes[name] = {"total": usage.total, "free": usage.free}
             print("SFT_PREFLIGHT=" + json.dumps({"torch": torch.__version__, "volumes": volumes}), flush=True)
+            if "SFT_ARCHIVE_KEY_B64" in os.environ:
+                subprocess.run([sys.executable, str(source / "sft_archive.py"), "--probe"], check=True)
             return 0
         environment = dict(os.environ)
         environment["PROBE_SOURCE_COMMIT"] = manifest["source_commit"]
