@@ -46,6 +46,35 @@ def main():
               flush=True)
         if sys.argv[1:] == ["--verify-only"]:
             return 0
+        if sys.argv[1:] == ["--prepare-restart"]:
+            run_root = Path("/home/jovyan/monarch-qwen-sft-20260929")
+            config = json.loads((source / "sft_config.json").read_text())
+            smoke = json.loads((run_root / "smoke-g2-recovery/complete.json").read_text())
+            expected = "027e8810a99e738e636ac0fc1cdffdc4340ef5d92be13ea1e6ff618002f4ec4b"
+            if len(smoke) != 4 or {(r["structure"], r["optimizer"]) for r in smoke} != {
+                (s, a) for s in ("dense", "monarch") for a in ("adamw", "muon")
+            }:
+                raise RuntimeError("Incomplete recovery smoke")
+            for result in smoke:
+                if result["identity"]["config"] != config or result["identity"]["projection_sha256"] != expected:
+                    raise RuntimeError("Recovery smoke configuration mismatch")
+            receipt = smoke[-1]["archive"]
+            if receipt["sha256"] != "ef3eea6a7c1556457938a6d039e9b8947be6a992a40944257663321580931f75" or receipt["bytes"] != 10518995488:
+                raise RuntimeError("Recovery checkpoint archive mismatch")
+            for name in ("/home/jovyan", "/workspace-SR006.nfs3"):
+                free = shutil.disk_usage(name).free
+                print("SFT_RESTART_FREE=" + json.dumps({"path": name, "free": free}), flush=True)
+                if free < 2 * 1024**3:
+                    raise RuntimeError("Insufficient persistent storage")
+            backup = run_root / "before-recovery-20260929"
+            backup.mkdir(exist_ok=False)
+            runs = run_root / "runs-g2"
+            if runs.exists():
+                runs.rename(backup / runs.name)
+            for path in run_root.glob("trial-*-g2-rank*.log"):
+                path.rename(backup / path.name)
+            print("SFT_RESTART_READY=" + json.dumps({"preserved": str(backup), "projection_sha256": expected}), flush=True)
+            return 0
         if sys.argv[1:] == ["--reclaim-initialization"]:
             run_root = Path("/home/jovyan/monarch-qwen-sft-20260929")
             projection = run_root / "monarch-initial.safetensors"
