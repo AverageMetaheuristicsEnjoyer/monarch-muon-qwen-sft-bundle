@@ -2,6 +2,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -38,6 +39,15 @@ def main():
         print("BUNDLE_AUTHENTICATED sha256=" + hashlib.sha256(payload).hexdigest(),
               flush=True)
         if sys.argv[1:] == ["--verify-only"]:
+            return 0
+        if sys.argv[1:] == ["--preflight"]:
+            import torch
+            volumes = {}
+            for name in ("/home/jovyan", "/workspace-SR006.nfs2", "/workspace-SR006.nfs3", "/tmp"):
+                if Path(name).exists():
+                    usage = shutil.disk_usage(name)
+                    volumes[name] = {"total": usage.total, "free": usage.free}
+            print("SFT_PREFLIGHT=" + json.dumps({"torch": torch.__version__, "volumes": volumes}), flush=True)
             return 0
         environment = dict(os.environ)
         environment["PROBE_SOURCE_COMMIT"] = manifest["source_commit"]
